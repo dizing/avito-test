@@ -1,0 +1,8 @@
+#GO
+export HOST_GOPATH=$(
+  if command -v go &> /dev/null; then
+    echo $(go env GOPATH)
+  else
+    echo "$HOME/go"
+  fi
+)
