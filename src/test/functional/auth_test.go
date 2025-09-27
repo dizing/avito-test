@@ -35,7 +35,7 @@ func TestAuthNewUserShouldHaveEmptyInfoWith5000Balance(t *testing.T) {
 
 	expected_info := handler.InfoResponse{
 		Coins:       5000,
-		Inventory:   []handler.Inventory{},
+		Inventory:   nil,
 		CoinHistory: handler.CoinHistory{},
 	}
 

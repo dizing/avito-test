@@ -26,7 +26,7 @@ func NewTransactionRepository(db *pgxpool.Pool, c *trmpgx.CtxGetter) domain.Tran
 }
 
 func (r *transactionRepository) GetById(ctx context.Context, id domain.TransactionUUID) (*domain.Transaction, error) {
-	query := `SELECT user_id_from, user_id_to, amount FROM Transactions WHERE id=$1`
+	query := `SELECT username_from, username_to, amount FROM Transactions WHERE id=$1`
 
 	row := r.getter.DefaultTrOrDB(ctx, r.db).QueryRow(ctx, query, id)
 
@@ -78,7 +78,7 @@ func (r *transactionRepository) Save(ctx context.Context, transaction *domain.Tr
 
 	// NOTE: Right now we assume transactions unchangeable. So we not allow update
 	query := `
-        INSERT INTO Transactions (id, user_id_from, user_id_to, amount) 
+        INSERT INTO Transactions (id, username_from, username_to, amount) 
         VALUES ($1, $2, $3, $4)
     `
 

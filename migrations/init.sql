@@ -30,7 +30,7 @@ CREATE TABLE User_Items (
     username VARCHAR(255) REFERENCES Users(username) ON DELETE CASCADE,
     item_name VARCHAR(255) REFERENCES Items(name) ON DELETE CASCADE,
     amount INTEGER CHECK (amount >= 0),
-    PRIMARY KEY (user_id, item_name)
+    PRIMARY KEY (username, item_name)
 );
 
 INSERT INTO Items (name, price) VALUES

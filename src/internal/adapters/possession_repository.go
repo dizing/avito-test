@@ -34,7 +34,7 @@ func (r *possessionRepository) GetPossessionByUsernameAndItemName(ctx context.Co
 }
 
 func (r *possessionRepository) GetUserInventory(ctx context.Context, username domain.UserName) (domain.UserInventory, error) {
-	query := `SELECT item_name, amount FROM User_Items WHERE user_id=$1`
+	query := `SELECT item_name, amount FROM User_Items WHERE username=$1`
 
 	rows, err := r.getter.DefaultTrOrDB(ctx, r.db).Query(ctx, query, username)
 	if err != nil {

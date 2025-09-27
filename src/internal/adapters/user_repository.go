@@ -19,7 +19,7 @@ func NewUserRepository(db *pgxpool.Pool, c *trmpgx.CtxGetter) domain.UserReposit
 }
 
 func (r *userRepository) GetByUsername(ctx context.Context, username domain.UserName) (*domain.User, error) {
-	query := `SELECT id, password, balance FROM Users WHERE username=$1`
+	query := `SELECT password, balance FROM Users WHERE username=$1`
 
 	row := r.getter.DefaultTrOrDB(ctx, r.db).QueryRow(ctx, query, username)
 
