@@ -12,7 +12,7 @@ func TestBuyExistedItem(t *testing.T) {
 	env := test.NewEnvironment(t)
 	defer env.Close()
 
-	env.EnsureAuthorized()
+	env.EnsureTestUserAuthorized()
 
 	default_items := []struct {
 		name           string
@@ -32,11 +32,11 @@ func TestBuyExistedItem(t *testing.T) {
 
 	for _, item := range default_items {
 		t.Run(fmt.Sprintf("Should buy existing item %s with price %d", item.name, item.expected_price), func(t *testing.T) {
-			expected_balance := env.GetBalance() - item.expected_price
+			expected_balance := env.GetTestUserBalance() - item.expected_price
 
 			env.ShopClient.BuyItem(item.name)
 
-			assert.Equal(t, expected_balance, env.GetBalance())
+			assert.Equal(t, expected_balance, env.GetTestUserBalance())
 		})
 	}
 }
@@ -44,7 +44,7 @@ func TestBuyExistedItem(t *testing.T) {
 func TestBuyUnexistedItemShouldReturnInvalidRequest(t *testing.T) {
 	env := test.NewEnvironment(t)
 	defer env.Close()
-	env.EnsureAuthorized()
+	env.EnsureTestUserAuthorized()
 
 	code := env.ShopClient.BuyItem("unexists")
 	assert.Equal(t, 400, code)
@@ -53,13 +53,13 @@ func TestBuyUnexistedItemShouldReturnInvalidRequest(t *testing.T) {
 func TestNotEnoughMoneyShouldReturnInvalidRequest(t *testing.T) {
 	env := test.NewEnvironment(t)
 	defer env.Close()
-	env.EnsureAuthorized()
+	env.EnsureTestUserAuthorized()
 
 	code := env.ShopClient.BuyItem("hoody")
 	assert.Equal(t, 200, code)
 
 	// TODO: change balance manually through database injection
-	for balance := env.GetBalance(); balance > 200; balance = env.GetBalance() {
+	for balance := env.GetTestUserBalance(); balance > 200; balance = env.GetTestUserBalance() {
 		code = env.ShopClient.BuyItem("umbrella")
 		assert.Equal(t, 200, code)
 	}

@@ -43,7 +43,7 @@ func (env *Environment) Close() {
 
 type ShopServiceDatabase struct {
 	migrations_file string // TODO: real migration tool like goose
-	pool            *pgxpool.Pool
+	Pool            *pgxpool.Pool
 }
 
 func NewShopClientDatabase(uri string, migrations_file_path string) *ShopServiceDatabase {
@@ -56,12 +56,12 @@ func NewShopClientDatabase(uri string, migrations_file_path string) *ShopService
 
 	return &ShopServiceDatabase{
 		migrations_file: migrations_file_path,
-		pool:            pool,
+		Pool:            pool,
 	}
 }
 
 func (d *ShopServiceDatabase) Close() {
-	d.pool.Close()
+	d.Pool.Close()
 }
 
 func (d *ShopServiceDatabase) RunMigrations() {
@@ -72,7 +72,7 @@ func (d *ShopServiceDatabase) RunMigrations() {
 		log.Fatal("Error reading SQL file: ", err)
 	}
 
-	_, err = d.pool.Exec(ctx, string(sqlBytes))
+	_, err = d.Pool.Exec(ctx, string(sqlBytes))
 	if err != nil {
 		log.Fatal("Error executing SQL: ", err)
 	}
@@ -81,7 +81,7 @@ func (d *ShopServiceDatabase) RunMigrations() {
 func (d *ShopServiceDatabase) Clear() {
 	ctx := context.Background()
 
-	_, err := d.pool.Exec(ctx, `
+	_, err := d.Pool.Exec(ctx, `
 		DROP SCHEMA public CASCADE;
 		CREATE SCHEMA public;
 		GRANT ALL ON SCHEMA public TO PUBLIC;
@@ -92,18 +92,25 @@ func (d *ShopServiceDatabase) Clear() {
 	}
 }
 
-func (env *Environment) EnsureAuthorized() {
-	code, token := env.ShopClient.Auth("username", "password")
+func (env *Environment) EnsureTestUserAuthorized() (string, handler.AuthResponse, handler.InfoResponse) {
+	const username = "username"
+
+	code, token := env.ShopClient.Auth(username, "password")
 
 	require.Equal(env.t, 200, code)
 
 	env.ShopClient.SetAuthToken(token.Token)
+
+	code, info := env.ShopClient.GetInfo()
+	require.Equal(env.t, 200, code)
+
+	return username, token, info
 }
 
-func (env *Environment) EnsureHaveAnotherUser() (string, handler.InfoResponse) {
+func (env *Environment) EnsureHaveAnotherUser() (string, handler.AuthResponse, handler.InfoResponse) {
 	const username = "another_username"
 
-	// NOTE: could be register or login, no difference
+	// NOTE: it could be existing user or not, no difference in that API
 	code, another_user_token := env.ShopClient.Auth(username, "another_password")
 	require.Equal(env.t, 200, code)
 
@@ -113,15 +120,22 @@ func (env *Environment) EnsureHaveAnotherUser() (string, handler.InfoResponse) {
 	code, info := another_client.GetInfo()
 	require.Equal(env.t, 200, code)
 
-	return username, info
+	return username, another_user_token, info
 }
 
-func (env *Environment) GetBalance() int {
-	env.EnsureAuthorized()
+func (env *Environment) GetTestUserInfo() handler.InfoResponse {
+	env.EnsureTestUserAuthorized()
 
 	code, info := env.ShopClient.GetInfo()
-
 	assert.Equal(env.t, 200, code)
 
-	return info.Coins
+	// TODO
+	// assert
+	// info output == database state
+
+	return info
+}
+
+func (env *Environment) GetTestUserBalance() int {
+	return env.GetTestUserInfo().Coins
 }

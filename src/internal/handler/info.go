@@ -2,7 +2,7 @@ package handler
 
 import (
 	"avito-test/internal/domain"
-	"log"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -26,14 +26,9 @@ func (h *infoHandler) GetInfo(c *gin.Context) {
 	credentials := GetAuthorizedUser(c)
 
 	userInfo, err := h.userInfoRepo.GetByUsername(c, credentials.Username)
-
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
-		log.Println("incorrect request" + err.Error())
+		SetInternalError(c, fmt.Errorf("can't find user from valid jwt token: %w", err))
 		return
-		// TODO user doesn't exists
 	}
 
 	c.JSON(http.StatusOK, InfoResponse{
