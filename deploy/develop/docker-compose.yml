@@ -24,6 +24,8 @@ services:
     #   retries: 30
     networks:
       - internal
+    need:
+      - db
   
   db:
     image: postgres:13
@@ -47,3 +49,4 @@ services:
       - internal
 networks:
   internal:
+    name: internal
