@@ -28,7 +28,7 @@ func NewEnvironment(t *testing.T) *Environment {
 	env := &Environment{
 		t:            t,
 		ShopClient:   NewShopClient("http://localhost:8080"),
-		ShopDatabase: NewShopClientDatabase(database_uri, "./../../../migrations/init.sql"),
+		ShopDatabase: NewShopClientDatabase(database_uri, "./../../../migrations/init.sql", "./../../../migrations/insert30000users.sql"),
 	}
 
 	env.ShopDatabase.Clear()
@@ -42,11 +42,12 @@ func (env *Environment) Close() {
 }
 
 type ShopServiceDatabase struct {
-	migrations_file string // TODO: real migration tool like goose
-	Pool            *pgxpool.Pool
+	init_migration_file      string // TODO: real migration tool like goose
+	test_users_creation_file string
+	Pool                     *pgxpool.Pool
 }
 
-func NewShopClientDatabase(uri string, migrations_file_path string) *ShopServiceDatabase {
+func NewShopClientDatabase(uri string, migrations_file_path string, users_creation_file_path string) *ShopServiceDatabase {
 	ctx := context.Background()
 
 	pool, err := pgxpool.Connect(ctx, uri)
@@ -55,8 +56,9 @@ func NewShopClientDatabase(uri string, migrations_file_path string) *ShopService
 	}
 
 	return &ShopServiceDatabase{
-		migrations_file: migrations_file_path,
-		Pool:            pool,
+		init_migration_file:      migrations_file_path,
+		test_users_creation_file: users_creation_file_path,
+		Pool:                     pool,
 	}
 }
 
@@ -64,18 +66,26 @@ func (d *ShopServiceDatabase) Close() {
 	d.Pool.Close()
 }
 
-func (d *ShopServiceDatabase) RunMigrations() {
+func runSqlFile(filePath string, pool *pgxpool.Pool) {
 	ctx := context.Background()
 
-	sqlBytes, err := os.ReadFile(d.migrations_file)
+	sqlBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		log.Fatal("Error reading SQL file: ", err)
 	}
 
-	_, err = d.Pool.Exec(ctx, string(sqlBytes))
+	_, err = pool.Exec(ctx, string(sqlBytes))
 	if err != nil {
 		log.Fatal("Error executing SQL: ", err)
 	}
+}
+
+func (d *ShopServiceDatabase) RunMigrations() {
+	runSqlFile(d.init_migration_file, d.Pool)
+}
+
+func (d *ShopServiceDatabase) CreateTestUsers() {
+	runSqlFile(d.test_users_creation_file, d.Pool)
 }
 
 func (d *ShopServiceDatabase) Clear() {

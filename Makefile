@@ -18,7 +18,13 @@ unit-test:
 	cd src && \
 	go test -count=1 -v ./cmd #TODO
 
-k6_local_%:
+prepare-stress: run-dev
+	cd src/test/stress && \
+	go test -v . -count=1
+
+k6_local_%: 
 	docker run --network internal --rm -i grafana/k6:latest run - <src/test/stress/k6/scripts/$*
 
-# TODO full stress test
+stress-test: prepare-stress
+	sleep 10 && \
+	make k6_local_constant1000rps.js
