@@ -34,16 +34,17 @@ export const options = {
       startRate: 333,
       preAllocatedVUs: globals.VUcount,
       maxVUs: globals.VUcount,
+      startTime: '1m',
       stages: [
         { target: 333, duration: '1m' }
       ]
     }
   },
   thresholds: {
-    'http_req_duration{request:auth}': ['p(95)<100', 'p(99)<150'],
-    'http_req_duration{request:buy}': ['p(99)<50'],
-    'http_req_duration{request:info}': ['p(99)<50'],
-    'http_req_duration{request:send}': ['p(99)<50'],
+    'http_req_duration{tag:auth}': ['p(95)<100', 'p(99)<150'],
+    'http_req_duration{tag:buy}': ['p(99)<50'],
+    'http_req_duration{tag:info}': ['p(99)<50'],
+    'http_req_duration{tag:send}': ['p(99)<50'],
   }
 };
 
@@ -89,11 +90,11 @@ function info(vuToken, expectedCoins, expectedSentLen) { // TODO: beatufy args. 
   if (expectedSentLen !== undefined) {
     check(infoRes, {
       'according transactions count': (r) => {
-        if (!r.json().coinHistory.sent) {
+        if (r.json().coinHistory.sent == null) {
           return expectedSentLen == 0;
         }
 
-        return r.json().coinHistory.sent.len() === expectedSentLen;
+        return r.json().coinHistory.sent.length === expectedSentLen;
       }
     });
   }
@@ -186,7 +187,7 @@ export function send() {
     toUser: `vu_${next_user_number}_user`,
     amount: 100
   });
-  const sendRes = http.post(`${BASE_URL}/api/sendCoins`, sendPayload, params);
+  const sendRes = http.post(`${BASE_URL}/api/sendCoin`, sendPayload, params);
   check(sendRes, {
     'send status is 200': (r) => r.status === 200,
   });

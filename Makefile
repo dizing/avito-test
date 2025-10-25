@@ -26,5 +26,5 @@ k6_local_%:
 	docker run --network internal --rm -i grafana/k6:latest run - <src/test/stress/k6/scripts/$*
 
 stress-test: prepare-stress
-	sleep 10 && \
+	sleep 20 && \
 	make k6_local_constant1000rps.js
