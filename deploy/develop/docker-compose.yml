@@ -17,16 +17,19 @@ services:
     container_name: avito-shop-service
     ports:
       - "8080:8080"
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:8080/healthcheck"]
-    #   interval: 3s
-    #   timeout: 5s
-    #   retries: 30
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://avito-shop-service:8080/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
     networks:
       - internal
     depends_on:
-      - db
+      db:
+        condition: service_healthy
   
+
   db:
     image: postgres:13
     container_name: postgres
@@ -41,12 +44,20 @@ services:
       - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "sh -c 'pg_isready -U postgres -d shop'"]
-      interval: 5s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
     networks:
       - internal
+
+
+  wait:
+    image: hello-world:latest
+    depends_on:
+      avito-shop-service:
+        condition: service_healthy
+
 networks:
   internal:
     name: internal

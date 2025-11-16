@@ -6,6 +6,7 @@ import (
 	"avito-test/pkg/utils"
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 
@@ -60,6 +61,12 @@ func main() {
 	handler.NewBuyHandler(item_repo, user_repo, possession_repo).Register(authorize_group)
 	handler.NewInfoHandler(user_info_repo).Register(authorize_group)
 	handler.NewSendHandler(user_repo, transactions_repo).Register(authorize_group)
+
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "UP",
+		})
+	})
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
