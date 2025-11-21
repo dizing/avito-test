@@ -8,6 +8,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/samber/lo"
+)
+
+const (
+	CLAIMS_USERNAME     = "Username"
+	CLAIMS_EXP          = "exp"
+	SECRET              = "secret"
+	CONTEXT_CREDENTIALS = "credentials"
 )
 
 func NewAuthMiddleware() gin.HandlerFunc {
@@ -19,62 +27,56 @@ func NewAuthMiddleware() gin.HandlerFunc {
 		}
 		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 
-		user, err := extractClaims(tokenString)
+		username, err := extractClaims(tokenString)
 		if err != nil {
 			SetUnauthorizedError(c, err)
 			return
 		}
-		c.Set("credentials", user)
+
+		c.Set(CONTEXT_CREDENTIALS, username)
 
 		c.Next()
 	}
 }
 
-func GetAuthorizedUser(c *gin.Context) *domain.User {
-	credentials, exists := c.Get("credentials")
-	if !exists {
-		return nil
-	}
+func GetAuthorizedUserName(c *gin.Context) domain.UserName {
+	credentials, exists := c.Get(CONTEXT_CREDENTIALS)
+	lo.Assert(exists, "must use GetAuthorizedUserName only in authorized handler")
 
-	return credentials.(*domain.User)
+	return credentials.(domain.UserName)
 }
 
-const (
-	CLAIMS_USERNAME = "Username"
-	CLAIMS_BALANCE  = "Balance"
-	CLAIMS_EXP      = "exp"
-)
-
-func createJwt(user *domain.User) string {
+func createJwt(username domain.UserName) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		CLAIMS_USERNAME: user.Username,
-		CLAIMS_BALANCE:  user.Balance,
+		CLAIMS_USERNAME: username,
 		CLAIMS_EXP:      time.Now().Add(time.Hour * 72).Unix(),
 	})
-	tokenString, _ := token.SignedString([]byte("secret"))
+	tokenString, _ := token.SignedString([]byte(SECRET))
 
 	return tokenString
 }
 
-func extractClaims(tokenString string) (*domain.User, error) {
+func extractClaims(tokenString string) (domain.UserName, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil
+		return []byte(SECRET), nil
 	})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if !token.Valid {
-		return nil, fmt.Errorf("authorization token invalid")
+		return "", fmt.Errorf("authorization token invalid")
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, fmt.Errorf("can't parse token claims")
+		return "", fmt.Errorf("can't parse token claims")
 	}
 
-	return &domain.User{
-		Username: domain.UserName(claims[CLAIMS_USERNAME].(string)),
-		Balance:  int(claims[CLAIMS_BALANCE].(float64)),
-	}, nil
+	username, ok := claims[CLAIMS_USERNAME]
+	if !ok {
+		return "", fmt.Errorf("claims must contain")
+	}
+
+	return domain.UserName(username.(string)), nil
 }

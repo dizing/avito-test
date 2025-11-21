@@ -12,7 +12,7 @@ stop-dev:
 	source populate_variables && \
 	${DOCKER_COMPOSE_BIN} -f deploy/develop/docker-compose.yml --project-directory . down
 
-func-test:
+func-test: run-dev
 	cd src/test/functional && \
 	go test -v . -count=1
 

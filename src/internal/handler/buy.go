@@ -2,24 +2,29 @@ package handler
 
 import (
 	"avito-test/internal/domain"
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 
+	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/gin-gonic/gin"
 )
 
 type buyHandler struct {
+	trManager     *manager.Manager
 	itemRepo      domain.ItemRepository
 	userRepo      domain.UserRepository
 	posessionRepo domain.PossessionRepository
 }
 
 func NewBuyHandler(
+	trManager *manager.Manager,
 	itemRepo domain.ItemRepository,
 	userRepo domain.UserRepository,
 	posessionRepo domain.PossessionRepository) *buyHandler {
 	return &buyHandler{
+		trManager:     trManager,
 		itemRepo:      itemRepo,
 		userRepo:      userRepo,
 		posessionRepo: posessionRepo,
@@ -45,40 +50,46 @@ func (h *buyHandler) BuyItem(c *gin.Context) {
 		return
 	}
 
-	credentials := GetAuthorizedUser(c)
+	username := GetAuthorizedUserName(c)
 
-	user, err := h.userRepo.GetByUsername(c, credentials.Username)
-	if err != nil {
-		SetInternalError(c, fmt.Errorf("can't find user from valid jwt token: %w", err))
-		return
-	}
-
-	if user.Balance < item.Price {
-		SetInvalidRequestError(c, fmt.Errorf("not enough money"))
-		return
-	}
-
-	possession, err := h.posessionRepo.GetPossessionByUsernameAndItemName(c, user.Username, item.Name)
-	if err != nil {
-		if errors.Is(err, domain.ErrEntityDoesNotExist) {
-			possession = domain.NewEmptyPossession(user.Username, item.Name)
-		} else {
-			SetInternalError(c, err)
-			return
+	if h.trManager.Do(c, func(ctx context.Context) error {
+		user, err := h.userRepo.GetByUsername(c, username)
+		if err != nil {
+			SetInternalError(c, fmt.Errorf("can't find user from valid jwt token: %w", err))
+			return err
 		}
-	}
 
-	user.Balance -= item.Price
-	possession.Amount += 1
+		if user.Balance < item.Price {
+			SetInvalidRequestError(c, fmt.Errorf("not enough money"))
+			return err
+		}
 
-	err = h.userRepo.Save(c, user)
-	if err != nil {
-		SetInternalError(c, err)
-	}
+		possession, err := h.posessionRepo.GetPossessionByUsernameAndItemName(c, user.Username, item.Name)
+		if err != nil {
+			if errors.Is(err, domain.ErrEntityDoesNotExist) {
+				possession = domain.NewEmptyPossession(user.Username, item.Name)
+			} else {
+				SetInternalError(c, err)
+				return err
+			}
+		}
 
-	err = h.posessionRepo.Save(c, possession)
-	if err != nil {
-		SetInternalError(c, err)
+		user.Balance -= item.Price
+		possession.Amount += 1
+
+		err = h.userRepo.Save(c, user)
+		if err != nil {
+			SetInternalError(c, err)
+		}
+
+		err = h.posessionRepo.Save(c, possession)
+		if err != nil {
+			SetInternalError(c, err)
+		}
+
+		return nil
+	}) != nil {
+		return
 	}
 
 	c.Status(http.StatusOK)

@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/gin-gonic/gin"
 )
 
 type infoHandler struct {
+	trManager    *manager.Manager
 	userInfoRepo domain.UserInfoRepository
 }
 
-func NewInfoHandler(userInfoRepo domain.UserInfoRepository) *infoHandler {
-	return &infoHandler{userInfoRepo}
+func NewInfoHandler(trManager *manager.Manager, userInfoRepo domain.UserInfoRepository) *infoHandler {
+	return &infoHandler{trManager, userInfoRepo}
 }
 
 func (h *infoHandler) Register(r gin.IRoutes) *infoHandler {
@@ -23,9 +25,9 @@ func (h *infoHandler) Register(r gin.IRoutes) *infoHandler {
 }
 
 func (h *infoHandler) GetInfo(c *gin.Context) {
-	credentials := GetAuthorizedUser(c)
+	username := GetAuthorizedUserName(c)
 
-	userInfo, err := h.userInfoRepo.GetByUsername(c, credentials.Username)
+	userInfo, err := h.userInfoRepo.GetByUsername(c, username)
 	if err != nil {
 		SetInternalError(c, fmt.Errorf("can't find user from valid jwt token: %w", err))
 		return

@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 
 	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv4/v2"
+	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,7 +43,6 @@ func main() {
 	utils.CheckErr(err)
 	defer pool.Close()
 
-	// trManager := manager.Must(trmpgx.NewDefaultFactory(pool))
 	ctxGetter := trmpgx.DefaultCtxGetter
 
 	user_repo := adapters.NewUserRepository(pool, ctxGetter)
@@ -53,14 +53,16 @@ func main() {
 
 	r.Use(CORSMiddleware())
 
-	handler.NewAuthHandler(user_repo).Register(r)
+	trManager := manager.Must(trmpgx.NewDefaultFactory(pool))
+
+	handler.NewAuthHandler(trManager, user_repo).Register(r)
 
 	authorize_group := r.Group("/")
 	authorize_group.Use(handler.NewAuthMiddleware())
 
-	handler.NewBuyHandler(item_repo, user_repo, possession_repo).Register(authorize_group)
-	handler.NewInfoHandler(user_info_repo).Register(authorize_group)
-	handler.NewSendHandler(user_repo, transactions_repo).Register(authorize_group)
+	handler.NewBuyHandler(trManager, item_repo, user_repo, possession_repo).Register(authorize_group)
+	handler.NewInfoHandler(trManager, user_info_repo).Register(authorize_group)
+	handler.NewSendHandler(trManager, user_repo, transactions_repo).Register(authorize_group)
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{

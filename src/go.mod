@@ -10,10 +10,10 @@ require gopkg.in/resty.v1 v1.12.0
 
 require (
 	github.com/avito-tech/go-transaction-manager/drivers/pgxv4/v2 v2.0.1
-	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v4 v4.18.3
+	github.com/samber/lo v1.52.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/crypto v0.42.0
 )
