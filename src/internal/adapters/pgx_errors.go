@@ -2,15 +2,15 @@ package adapters
 
 import (
 	"avito-test/internal/domain"
+	"errors"
 
 	"github.com/jackc/pgx/v4"
 )
 
 func mapPgxError(pgxErr error) error {
-	if pgxErr == pgx.ErrNoRows {
+	if errors.Is(pgxErr, pgx.ErrNoRows) {
 		return domain.ErrEntityDoesNotExist
 	}
 
-	// TODO default data sanitizing
 	return pgxErr
 }

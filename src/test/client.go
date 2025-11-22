@@ -57,7 +57,7 @@ func (c *ShopClient) Auth(username string, password string) (int, handler.AuthRe
 	return code, response
 }
 
-func (c *ShopClient) Send(to_username string, amount int) int {
+func (c *ShopClient) Send(to_username string, amount uint) int {
 	var req = handler.SendCoinRequest{
 		ToUser: to_username,
 		Amount: amount,

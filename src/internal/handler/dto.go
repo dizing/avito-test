@@ -8,7 +8,7 @@ type InfoResponse struct {
 
 type Inventory struct {
 	Type     string `json:"type"`
-	Quantity int    `json:"quantity"`
+	Quantity uint   `json:"quantity"`
 }
 
 type CoinHistory struct {
@@ -18,12 +18,12 @@ type CoinHistory struct {
 
 type ReceivedTransaction struct {
 	FromUser string `json:"fromUser"`
-	Amount   int    `json:"amount"`
+	Amount   uint   `json:"amount"`
 }
 
 type SentTransaction struct {
 	ToUser string `json:"toUser"`
-	Amount int    `json:"amount"`
+	Amount uint   `json:"amount"`
 }
 
 type AuthRequest struct {
@@ -37,7 +37,7 @@ type AuthResponse struct {
 
 type SendCoinRequest struct {
 	ToUser string `json:"toUser" binding:"required"`
-	Amount int    `json:"amount" binding:"required"`
+	Amount uint   `json:"amount" binding:"required"`
 }
 
 type ErrorResponse struct {

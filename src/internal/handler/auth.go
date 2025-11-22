@@ -48,7 +48,12 @@ func (h *authHandler) login(c *gin.Context) {
 					passwordHash, _ := bcrypt.GenerateFromPassword([]byte(request.Password), 12)
 					user = domain.NewUser(domain.UserName(request.Username), passwordHash)
 
-					h.userRepo.Save(c, user)
+					err = h.userRepo.Save(c, user)
+					if err != nil {
+						SetInternalError(c, err)
+						return err
+					}
+
 					username = user.Username
 					return nil
 				})
@@ -70,6 +75,6 @@ func (h *authHandler) login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, AuthResponse{
-		Token: createJwt(username),
+		Token: domain.CreateJwt(username),
 	})
 }

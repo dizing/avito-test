@@ -14,6 +14,8 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+// TODO move to functional tests
+
 func Test(t *testing.T) {
 	ctx := context.Background()
 
@@ -27,11 +29,11 @@ func Test(t *testing.T) {
 	item_repo := NewItemRepository(pool, trmpgx.DefaultCtxGetter)
 
 	_, err = item_repo.GetByName(ctx, "test")
-	require.Equal(t, err, domain.ErrEntityDoesNotExist)
+	require.Equal(t, domain.ErrEntityDoesNotExist, err)
 
 	item, err := item_repo.GetByName(ctx, "pink-hoody")
 	require.NoError(t, err)
-	require.Equal(t, item.Price, 500)
+	require.Equal(t, item.Price, uint(500))
 
 	passHash := []byte("passhash")
 	var expected_user = domain.User{
@@ -64,7 +66,7 @@ func Test(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, expected_transaction, *transaction)
 
-	history, err := transaction_repo.GetAllByUsername(ctx, user.Username)
+	history, err := transaction_repo.GetTransactionHistoryByUsername(ctx, user.Username)
 	require.NoError(t, err)
 	require.True(t, len(history) == 1)
 	require.Equal(t, expected_transaction, *(history[0]))
@@ -78,7 +80,7 @@ func Test(t *testing.T) {
 	err = transaction_repo.Save(ctx, &expected_second_transaction)
 	require.NoError(t, err)
 
-	history, err = transaction_repo.GetAllByUsername(ctx, user.Username)
+	history, err = transaction_repo.GetTransactionHistoryByUsername(ctx, user.Username)
 	require.NoError(t, err)
 	require.True(t, len(history) == 2)
 	require.Equal(t, expected_transaction, *(history[0]))

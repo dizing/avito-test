@@ -8,6 +8,7 @@ import (
 
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/gin-gonic/gin"
+	"github.com/samber/lo"
 )
 
 type sendHandler struct {
@@ -52,7 +53,7 @@ func (h *sendHandler) SendCoins(c *gin.Context) {
 			return err
 		}
 
-		if from_user.Balance < request.Amount {
+		if from_user.Balance < int(request.Amount) {
 			SetInvalidRequestError(c, fmt.Errorf("not enough money to send"))
 			return err
 		}
@@ -63,11 +64,14 @@ func (h *sendHandler) SendCoins(c *gin.Context) {
 			return err
 		}
 
-		transaction := domain.NewTransaction(from_user.Username, to_user.Username, request.Amount)
-		from_user.Balance -= request.Amount
-		to_user.Balance += request.Amount
+		from_user.Balance -= int(request.Amount)
+		to_user.Balance += int(request.Amount)
 
-		err = h.transactionsRepo.Save(c, transaction)
+		err = h.transactionsRepo.Save(c, lo.ToPtr(domain.Transaction{
+			Id:     domain.TransactionUUID{},
+			From:   from_user.Username,
+			To:     to_user.Username,
+			Amount: request.Amount}))
 		if err != nil {
 			SetInternalError(c, err)
 			return err

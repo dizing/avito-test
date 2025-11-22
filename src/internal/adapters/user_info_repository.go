@@ -30,7 +30,7 @@ func (r *userInfoRepository) GetByUsername(ctx context.Context, username domain.
 		return nil, err
 	}
 
-	transactionHistory, err := r.transactionRepo.GetAllByUsername(ctx, username)
+	transactionHistory, err := r.transactionRepo.GetTransactionHistoryByUsername(ctx, username)
 	if err != nil {
 		return nil, err
 	}

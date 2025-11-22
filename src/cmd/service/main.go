@@ -3,10 +3,12 @@ package main
 import (
 	"avito-test/internal/adapters"
 	"avito-test/internal/handler"
+	"avito-test/internal/handler/middleware"
 	"avito-test/pkg/utils"
 	"context"
 	"fmt"
-	"net/http"
+	"log/slog"
+	"os"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 
@@ -16,59 +18,46 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func CORSMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-
-		c.Next()
-	}
-}
-
 func main() {
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, nil)))
+
 	ctx := context.Background()
 	r := gin.Default()
 
 	uri := fmt.Sprintf("postgres://%s:%s@%s:%d/%s",
 		"postgres", "password", "postgres", 5432, "shop",
 	)
-	pool, err := pgxpool.Connect(ctx, uri)
+	config, err := pgxpool.ParseConfig(uri)
+	utils.CheckErr(err)
+
+	config.MaxConns = 300
+	pool, err := pgxpool.ConnectConfig(ctx, config)
+
 	utils.CheckErr(err)
 	defer pool.Close()
 
 	ctxGetter := trmpgx.DefaultCtxGetter
 
-	user_repo := adapters.NewUserRepository(pool, ctxGetter)
-	item_repo := adapters.NewItemRepository(pool, ctxGetter)
+	userRepo := adapters.NewUserRepository(pool, ctxGetter)
+	itemRepo := adapters.NewItemRepository(pool, ctxGetter)
 	possession_repo := adapters.NewPosessionRepository(pool, ctxGetter)
 	transactions_repo := adapters.NewTransactionRepository(pool, ctxGetter)
-	user_info_repo := adapters.NewInfoRepository(user_repo, possession_repo, transactions_repo)
+	userInfoRepo := adapters.NewInfoRepository(userRepo, possession_repo, transactions_repo)
 
-	r.Use(CORSMiddleware())
+	r.Use(middleware.NewCORSMiddleware())
 
 	trManager := manager.Must(trmpgx.NewDefaultFactory(pool))
 
-	handler.NewAuthHandler(trManager, user_repo).Register(r)
+	handler.NewAuthHandler(trManager, userRepo).Register(r)
 
-	authorize_group := r.Group("/")
-	authorize_group.Use(handler.NewAuthMiddleware())
+	authorizeGroup := r.Group("/")
+	authorizeGroup.Use(middleware.NewAuthMiddleware())
 
-	handler.NewBuyHandler(trManager, item_repo, user_repo, possession_repo).Register(authorize_group)
-	handler.NewInfoHandler(trManager, user_info_repo).Register(authorize_group)
-	handler.NewSendHandler(trManager, user_repo, transactions_repo).Register(authorize_group)
+	handler.NewBuyHandler(trManager, itemRepo, userRepo, possession_repo).Register(authorizeGroup)
+	handler.NewInfoHandler(trManager, userInfoRepo).Register(authorizeGroup)
+	handler.NewSendHandler(trManager, userRepo, transactions_repo).Register(authorizeGroup)
 
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "UP",
-		})
-	})
+	handler.NewHealthHandler().Register(r)
 
-	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	r.Run("0.0.0.0:8080") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }

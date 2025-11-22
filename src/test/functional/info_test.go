@@ -32,27 +32,27 @@ func TestGetInfoCorrectlyReturnUserInfo(t *testing.T) {
 	ctx := context.Background()
 
 	query := `
-		INSERT INTO Transactions (username_from, username_to, amount) 
+		INSERT INTO transactions (username_from, username_to, amount) 
 		VALUES ($1, $2, 100);
 
-		UPDATE Users SET balance = balance - 100 WHERE username = $1;
-		UPDATE Users SET balance = balance + 100 WHERE username = $2;
+		UPDATE users SET balance = balance - 100 WHERE username = $1;
+		UPDATE users SET balance = balance + 100 WHERE username = $2;
 
-		INSERT INTO User_Items (username, item_name, amount) 
+		INSERT INTO user_items (username, item_name, amount) 
 		VALUES 
 				($1, 'hoody', 1),
 				($1, 'powerbank', 1);
 
-		UPDATE Users SET balance = balance - (SELECT price from items where name='hoody') WHERE username = $1;
-		UPDATE Users SET balance = balance - (SELECT price from items where name='powerbank') WHERE username = $1;
+		UPDATE users SET balance = balance - (SELECT price from items where name='hoody') WHERE username = $1;
+		UPDATE users SET balance = balance - (SELECT price from items where name='powerbank') WHERE username = $1;
 
-		INSERT INTO User_Items (username, item_name, amount) 
+		INSERT INTO user_items (username, item_name, amount) 
 		VALUES 
 				($2, 'umbrella', 1),
 				($2, 'wallet', 1);
 
-		UPDATE Users SET balance = balance - (SELECT price from items where name='umbrella') WHERE username = $2;
-		UPDATE Users SET balance = balance - (SELECT price from items where name='wallet') WHERE username = $2;
+		UPDATE users SET balance = balance - (SELECT price from items where name='umbrella') WHERE username = $2;
+		UPDATE users SET balance = balance - (SELECT price from items where name='wallet') WHERE username = $2;
 	`
 	query = strings.ReplaceAll(query, "$1", fmt.Sprintf("'%s'", first_user))
 	query = strings.ReplaceAll(query, "$2", fmt.Sprintf("'%s'", second_user))

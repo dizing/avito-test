@@ -59,22 +59,18 @@ func (h *buyHandler) BuyItem(c *gin.Context) {
 			return err
 		}
 
-		if user.Balance < item.Price {
+		if user.Balance < int(item.Price) {
 			SetInvalidRequestError(c, fmt.Errorf("not enough money"))
 			return err
 		}
 
 		possession, err := h.posessionRepo.GetPossessionByUsernameAndItemName(c, user.Username, item.Name)
 		if err != nil {
-			if errors.Is(err, domain.ErrEntityDoesNotExist) {
-				possession = domain.NewEmptyPossession(user.Username, item.Name)
-			} else {
-				SetInternalError(c, err)
-				return err
-			}
+			SetInternalError(c, err)
+			return err
 		}
 
-		user.Balance -= item.Price
+		user.Balance -= int(item.Price)
 		possession.Amount += 1
 
 		err = h.userRepo.Save(c, user)

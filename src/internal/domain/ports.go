@@ -18,7 +18,7 @@ type UserInfoRepository interface {
 
 type TransactionRepository interface {
 	GetById(context.Context, TransactionUUID) (*Transaction, error)
-	GetAllByUsername(context.Context, UserName) (TransactionHistory, error)
+	GetTransactionHistoryByUsername(context.Context, UserName) (TransactionHistory, error)
 	Save(context.Context, *Transaction) error
 }
 

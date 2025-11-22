@@ -3,6 +3,7 @@ package adapters
 import (
 	"avito-test/internal/domain"
 	"context"
+	"sync"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 
@@ -19,25 +20,45 @@ func NewItemRepository(db *pgxpool.Pool, c *trmpgx.CtxGetter) domain.ItemReposit
 }
 
 // NOTE: items is constant right now. So item is never expire.
-var item_cache = map[domain.ItemName]*domain.Item{}
+var itemCache = map[domain.ItemName]*domain.Item{}
+var itemCacheMtx = sync.RWMutex{}
 
-func (r *ItemRepository) GetByName(ctx context.Context, name domain.ItemName) (*domain.Item, error) {
-	if i, ok := item_cache[name]; ok {
-		return i, nil
+func getItemFromCache(name domain.ItemName) *domain.Item {
+	itemCacheMtx.RLock()
+	defer itemCacheMtx.RUnlock()
+
+	if i, ok := itemCache[name]; ok {
+		item := *i
+		return &item
 	}
 
-	query := `SELECT * FROM Items WHERE name=$1`
+	return nil
+}
+
+func cacheItem(name domain.ItemName, item domain.Item) {
+	itemCacheMtx.Lock()
+	defer itemCacheMtx.Unlock()
+
+	itemCache[name] = &item
+}
+
+func (r *ItemRepository) GetByName(ctx context.Context, name domain.ItemName) (*domain.Item, error) {
+	if item := getItemFromCache(name); item != nil {
+		return item, nil
+	}
+
+	query := `SELECT * FROM items WHERE name=$1`
 
 	row := r.getter.DefaultTrOrDB(ctx, r.db).QueryRow(ctx, query, name)
 
-	item := &domain.Item{}
+	var item domain.Item
 
 	err := row.Scan(&item.Name, &item.Price)
 	if err != nil {
 		return nil, mapPgxError(err)
 	}
 
-	item_cache[name] = item
+	cacheItem(name, item)
 
-	return item, nil
+	return &item, nil
 }

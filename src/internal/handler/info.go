@@ -41,7 +41,7 @@ func (h *infoHandler) GetInfo(c *gin.Context) {
 }
 
 func mapInventory(model domain.UserInventory) []Inventory {
-	var dto []Inventory
+	dto := make([]Inventory, 0, len(model))
 
 	for itemName, count := range model {
 		dto = append(dto, Inventory{

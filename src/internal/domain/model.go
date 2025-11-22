@@ -8,7 +8,7 @@ type ItemName string
 
 type Item struct {
 	Name  ItemName
-	Price int
+	Price uint
 }
 
 type TransactionUUID uuid.UUID
@@ -18,12 +18,12 @@ type Transaction struct {
 	Id     TransactionUUID
 	From   UserName
 	To     UserName
-	Amount int
+	Amount uint
 }
 
 type TransactionHistory []*Transaction
 
-func NewTransaction(From UserName, To UserName, amount int) *Transaction {
+func NewTransaction(From UserName, To UserName, amount uint) *Transaction {
 	return &Transaction{
 		Id:     TransactionUUID{},
 		From:   From,
@@ -35,18 +35,10 @@ func NewTransaction(From UserName, To UserName, amount int) *Transaction {
 type Possession struct {
 	Username UserName
 	Item     ItemName
-	Amount   int
+	Amount   uint
 }
 
-func NewEmptyPossession(username UserName, item ItemName) *Possession {
-	return &Possession{
-		Username: username,
-		Item:     item,
-		Amount:   0,
-	}
-}
-
-type UserInventory map[ItemName]int
+type UserInventory map[ItemName]uint
 
 type User struct {
 	Username     UserName
