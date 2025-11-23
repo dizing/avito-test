@@ -1,0 +1,57 @@
+docker run --network internal --rm -i grafana/k6:latest run - <src/test/stress/k6/scripts/info_scanario.js
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+     execution: local
+        script: -
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 500 max VUs, 4m30s max duration (incl. graceful stop):
+              * default: Up to 500 looping VUs for 4m0s over 4 stages (gracefulRampDown: 30s, gracefulStop: 30s)
+
+
+running (0m00.8s), 001/500 VUs, 263 complete and 0 interrupted iterations
+default   [   0% ] 001/500 VUs  0m00.8s/4m00.0s
+
+running (0m01.8s), 001/500 VUs, 1350 complete and 0 interrupted iterations
+default   [   1% ] 001/500 VUs  0m01.8s/4m00.0s
+
+running (0m02.8s), 001/500 VUs, 2492 complete and 0 interrupted iterations
+default   [   1% ] 001/500 VUs  0m02.8s/4m00.0s
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 6496   1897.515553/s
+    checks_succeeded...: 50.00% 3248 out of 6496
+    checks_failed......: 50.00% 3248 out of 6496
+
+    ✓ info status is 200
+    ✗ base coin is 5000
+      ↳  0% — ✓ 0 / ✗ 3248
+
+    HTTP
+    http_req_duration..............: avg=950.11µs min=572.65µs med=785.61µs max=418.2ms  p(90)=902.45µs p(95)=1.02ms
+      { expected_response:true }...: avg=950.11µs min=572.65µs med=785.61µs max=418.2ms  p(90)=902.45µs p(95)=1.02ms
+    http_req_failed................: 0.00%  0 out of 3249
+    http_reqs......................: 3249   949.049882/s
+
+    EXECUTION
+    iteration_duration.............: avg=1.04ms   min=634.47µs med=860.89µs max=453.22ms p(90)=1ms      p(95)=1.18ms
+    iterations.....................: 3248   948.757777/s
+    vus............................: 1      min=1         max=1  
+    vus_max........................: 500    min=500       max=500
+
+    NETWORK
+    data_received..................: 1.6 MB 456 kB/s
+    data_sent......................: 907 kB 265 kB/s
+
+
+
+
+running (0m03.4s), 000/500 VUs, 3248 complete and 1 interrupted iterations
+default ✗ [   1% ] 001/500 VUs  0m03.4s/4m00.0s
